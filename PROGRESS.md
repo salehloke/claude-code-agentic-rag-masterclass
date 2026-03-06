@@ -11,72 +11,74 @@ Track your progress through the masterclass. Update this file as you complete mo
 
 ## Modules
 
-### Module 1: App Shell + Observability
-- [ ] Supabase project setup + `.env` configuration
-- [ ] Auth (Supabase Auth - login/signup)
-- [ ] RLS policies on `threads`, `messages`, `documents` tables
-- [ ] Chat UI (React + shadcn/ui, threaded view)
-- [ ] OpenAI Responses API integration (managed threads + file_search)
-- [ ] LangSmith tracing setup
-- [ ] Smoke test: user can log in, start a thread, get a response
+### Module 1: MCP Server Scaffold + Supabase Verification
+- [x] Supabase local setup (CLI, init, start, .env, pgvector)
+- [x] Python MCP server skeleton (stdio transport)
+- [x] `hello` tool — basic tool to verify MCP is working
+- [x] `supabase_health` tool — verifies DB connectivity
+- [x] Register MCP server in Claude Code project settings (`.mcp.json`)
+- [x] Smoke test: Claude Code calls `hello` tool and gets a response
 
-### Module 2: BYO Retrieval + Memory
-> Prerequisite: Architectural decision — replace Responses API with Chat Completions API
-- [ ] Remove Responses API code + related DB schema
-- [ ] Ingestion UI (drag-and-drop file upload)
-- [ ] Supabase Storage for raw files
-- [ ] Pydantic schemas for `Document` and `Chunk`
-- [ ] PGVector setup (vector extension, embedding dimensions 1536/3072)
-- [ ] Chunking → embedding → pgvector pipeline
-- [ ] Retrieval tool (vector similarity search)
-- [ ] OpenRouter / Ollama / LM Studio integration (Chat Completions API)
-- [ ] Chat history storage (stateless API — store and send full history)
-- [ ] Supabase Realtime for ingestion status updates
-- [ ] Smoke test: upload a file, ask a question, get a grounded response
+### Module 2: Document Ingestion via MCP
+- [x] Pydantic schemas for `Document` and `Chunk`
+- [x] Supabase Storage for raw files
+- [x] Chunking strategy (recursive character splitting)
+- [x] Embed chunks via Gemini API (free tier)
+- [x] Store embeddings in pgvector
+- [x] `ingest_file` MCP tool
+- [x] `list_documents` MCP tool
+- [x] `delete_document` MCP tool
+- [x] Smoke test: ingest a file via Claude Code, verify chunks stored in DB
 
-### Module 3: Record Manager
+### Module 3: Retrieval Tool
+- [x] `search_documents` MCP tool (vector similarity search)
+- [x] Relevance threshold filtering
+- [x] Ranked results with source attribution
+- [x] Smoke test: ask Claude Code a question, verify it calls `search_documents` and returns grounded answer
+
+### Module 4: Record Manager
 - [ ] SHA-256 content hashing on ingest
 - [ ] Deduplication: skip if hash already exists and unchanged
 - [ ] Delete old chunks + re-embed on file modification (prevent orphan chunks)
-- [ ] Smoke test: upload same file twice, verify no duplicate chunks
+- [ ] Smoke test: ingest same file twice, verify no duplicate chunks
 
-### Module 4: Metadata Extraction
+### Module 5: Metadata Extraction
 - [ ] `DocumentMetadata` Pydantic schema (title, summary, topics, document_type, language)
-- [ ] LLM structured extraction from first 8,000 characters of document
+- [ ] LLM structured extraction via Gemini API from first 8,000 characters
 - [ ] Store metadata in DB alongside chunks
 - [ ] Metadata-filtered retrieval (filter search space before semantic match)
-- [ ] Smoke test: ingest a PDF, verify metadata extracted and filterable
+- [ ] Smoke test: ingest a document, verify metadata extracted and filterable
 
-### Module 5: Multi-Format Support
+### Module 6: Multi-Format Support
 - [ ] Docling integration for document parsing
 - [ ] Support: PDF, DOCX, HTML, Markdown
 - [ ] Standard pipeline (fast, CPU-friendly)
 - [ ] Cascade deletes (delete document → delete all chunks)
 - [ ] Smoke test: ingest one file of each format successfully
 
-### Module 6: Hybrid Search + Reranking
+### Module 7: Hybrid Search + Reranking
 - [ ] BM25 keyword search implementation
 - [ ] Hybrid search: combine semantic (vector) + keyword (BM25) results
 - [ ] RRF (Reciprocal Rank Fusion) to normalize and merge scores
-- [ ] Reranker integration (Cohere or local bge-reranker)
+- [ ] Reranker integration (local bge-reranker or Cohere)
 - [ ] Smoke test: query with a specific product code, verify keyword result surfaces
 
-### Module 7: Agentic Tools
-- [ ] Tavily web search tool (fallback when docs don't have the answer)
-- [ ] Text-to-SQL tool setup
+### Module 8: Additional Tools
+- [ ] `web_search` MCP tool (fallback when docs don't have the answer)
+- [ ] `query_sql` MCP tool (text-to-SQL)
 - [ ] Read-only Postgres user (`sql_reader`) with restricted permissions
 - [ ] Isolated connection string (`SQL_READER_URL`) on transaction pooler port 6543
-- [ ] Agent routing: choose between retrieval, SQL, or web search per query
 - [ ] Smoke test: ask a factual question not in docs, verify web search fallback fires
 
-### Module 8: Sub-Agents
-- [ ] `analyze_document` tool that spawns a sub-agent
-- [ ] Sub-agent loads full document context (up to 70k+ tokens) in isolation
-- [ ] Sub-agent returns summarized insight to main agent
-- [ ] UI: `<think>` tag rendering (thought bubbles component)
-- [ ] UI: hide/show toggle for reasoning output
-- [ ] UI: nested tool call indicators with status + completion checkmarks
-- [ ] Smoke test: ask to "analyze [document]", verify sub-agent spawns and returns insight
+### Module 9: Web Chat UI
+- [ ] React + Vite + Tailwind + shadcn/ui frontend scaffold
+- [ ] FastAPI backend wrapping core RAG functions (same functions MCP tools use)
+- [ ] Supabase Auth (login/signup)
+- [ ] RLS policies on all tables
+- [ ] Chat UI with threads, SSE streaming
+- [ ] Ingestion UI with drag-drop upload
+- [ ] Supabase Realtime for ingestion status
+- [ ] Smoke test: sign up, upload a file, ask a question, get a grounded streaming response
 
 ---
 
@@ -84,11 +86,12 @@ Track your progress through the masterclass. Update this file as you complete mo
 
 | Tag | Milestone |
 |:----|:----------|
-| `v0.1` | Module 1 — App Shell |
-| `v0.2` | Module 2 — BYO Retrieval |
-| `v0.3` | Module 3 — Record Manager |
-| `v0.4` | Module 4 — Metadata |
-| `v0.5` | Module 5 — Multi-Format |
-| `v0.6` | Module 6 — Hybrid Search |
-| `v0.7` | Module 7 — Agentic Tools |
-| `v0.8` | Module 8 — Sub-Agents (Alpha) |
+| `v0.1` | Module 1 — MCP Scaffold |
+| `v0.2` | Module 2 — Ingestion |
+| `v0.3` | Module 3 — Retrieval |
+| `v0.4` | Module 4 — Record Manager |
+| `v0.5` | Module 5 — Metadata |
+| `v0.6` | Module 6 — Multi-Format |
+| `v0.7` | Module 7 — Hybrid Search |
+| `v0.8` | Module 8 — Additional Tools |
+| `v0.9` | Module 9 — Web Chat UI |

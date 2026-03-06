@@ -18,12 +18,11 @@ This project uses a **structured task workflow** to ensure every feature, bug fi
    - **Simple** - Single-pass executable, low risk
    - **Medium** - May need iteration, some complexity
    - **Complex** - Break into sub-plans before executing
-2. Create a plan file at `.agent/plans/{sequence}.{plan-name}.md`
+2. Create a plan + task file at `docs/02_backlog/{sequence}.{plan-name}.md`
    - Example: `1.auth-setup.md`, `2.document-ingestion.md`
-3. Plans must include at least one **validation test** per task
-4. Create a task file at `docs/01_active/{ID}-{slug}.md`
-   - ID format: `YYMMDD-HHMMSS`
    - Must include `## Definition of Done` and `## Execution Log`
+3. Plans must include at least one **validation test** per task
+4. When work begins, move the file from `docs/02_backlog/` → `docs/01_active/`
 
 ### Phase 2: Build & Validate
 1. Execute the plan step by step
@@ -74,6 +73,8 @@ docs/
 **Status flow**: `02_backlog` → `01_active` → `04_completed`
 **Cancelled flow**: `01_active` → `03_archive`
 
+> Plans and task files are the same file — created in `02_backlog`, moved to `01_active` when work starts.
+
 ---
 
 ## Naming Conventions
@@ -121,12 +122,13 @@ These rules apply to every task in this project:
 | No LLM frameworks | Raw OpenAI/OpenRouter SDK only. No LangChain, no LangGraph. |
 | Structured outputs | Use Pydantic models for all LLM structured responses |
 | Row-Level Security | Every Supabase table must have RLS — users see only their own data |
-| Streaming | Chat responses via SSE only |
-| Realtime status | Ingestion progress updates via Supabase Realtime |
-| Chat history | Module 2+: stateless API — store and send full history yourself |
-| Ingestion | Manual file upload only — no connectors, no automated pipelines |
+| MCP transport | MCP server uses stdio transport |
+| Reasoning LLM | Claude via Claude Code — no separate chat/completion API key needed |
+| Streaming | Chat responses via SSE (Module 9 only) |
+| Realtime status | Ingestion progress updates via Supabase Realtime (Module 9 only) |
+| Ingestion | Manual only — via MCP tool calls or drag-and-drop (Module 9). No connectors or automated pipelines |
 | Python env | Always use `venv` for the backend |
-| Planning | All plans saved to `.agent/plans/` before any code is written |
+| Planning | All plans saved to `docs/02_backlog/` before any code is written |
 | Text-to-SQL security | Never use service role for SQL — use a read-only `sql_reader` Postgres user with dedicated `SQL_READER_URL` on port 6543 |
 
 ---
@@ -135,14 +137,15 @@ These rules apply to every task in this project:
 
 | Module | Focus |
 |:-------|:------|
-| Module 1 | App shell, Auth, OpenAI Responses API, LangSmith |
-| Module 2 | BYO Retrieval, Chat Completions API, vector search, ingestion UI |
-| Module 3 | Record Manager (deduplication, content hashing) |
-| Module 4 | Metadata extraction (LLM-structured, filterable) |
-| Module 5 | Multi-format support (PDF, DOCX, HTML, Markdown via docling) |
-| Module 6 | Hybrid search + reranking (keyword + vector, RRF, cross-encoder) |
-| Module 7 | Additional tools (Text-to-SQL, web search fallback) |
-| Module 8 | Sub-agents (isolated context, nested tool display, reasoning) |
+| Module 1 | MCP server scaffold, Supabase verification |
+| Module 2 | Document ingestion via MCP (chunking, embedding, pgvector) |
+| Module 3 | Retrieval tool (vector similarity search) |
+| Module 4 | Record Manager (deduplication, content hashing) |
+| Module 5 | Metadata extraction (LLM-structured, filterable) |
+| Module 6 | Multi-format support (PDF, DOCX, HTML, Markdown via docling) |
+| Module 7 | Hybrid search + reranking (keyword + vector, RRF, cross-encoder) |
+| Module 8 | Additional tools (Text-to-SQL, web search fallback) |
+| Module 9 | Web Chat UI (React, FastAPI, Auth, SSE streaming) |
 
 ---
 
@@ -165,7 +168,8 @@ These rules apply to every task in this project:
 | `CLAUDE.md` | Core rules and dev flow for Claude Code |
 | `PRD.md` | Full product requirements and module specs |
 | `PROGRESS.md` | Module completion tracker — update as you go |
-| `.agent/plans/` | All execution plans (one per feature/module) |
+| `docs/02_backlog/` | Plans created here before work starts |
+| `docs/01_active/` | Plans move here when work begins |
 | `docs/workflow.md` | This file — the task and documentation workflow |
 | `docs/changelogs.md` | Running technical changelog |
 | `docs/06_rules/` | Detailed standards and rules per domain |

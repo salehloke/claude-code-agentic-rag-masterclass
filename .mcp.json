@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "rag-masterclass": {
+      "type": "stdio",
+      "command": "/Users/salehloke/Developer/project/claude-code-agentic-rag-masterclass/server/venv/bin/python",
+      "args": ["server/main.py"],
+      "cwd": "/Users/salehloke/Developer/project/claude-code-agentic-rag-masterclass"
+    }
+  }
+}
