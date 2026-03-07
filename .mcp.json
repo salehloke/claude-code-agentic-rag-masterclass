@@ -3,7 +3,7 @@
     "rag-masterclass": {
       "type": "stdio",
       "command": "/Users/salehloke/Developer/project/claude-code-agentic-rag-masterclass/server/venv/bin/python",
-      "args": ["server/main.py"],
+      "args": ["-m", "server.main"],
       "cwd": "/Users/salehloke/Developer/project/claude-code-agentic-rag-masterclass"
     }
   }

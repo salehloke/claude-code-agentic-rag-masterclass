@@ -106,12 +106,12 @@ Support PDF, DOCX, HTML, and Markdown file ingestion using Docling for document 
 
 ## Definition of Done
 
-- [ ] Docling installed and importable
-- [ ] `server/parser.py` handles PDF, DOCX, HTML, Markdown, TXT
-- [ ] `ingest_file` uses parser for multi-format support
-- [ ] Cascade deletes verified
-- [ ] Test files for each format
-- [ ] Smoke test passes
+- [x] Docling installed and importable
+- [x] `server/parser.py` handles PDF, DOCX, HTML, Markdown, TXT
+- [x] `ingest_file` uses parser for multi-format support
+- [x] Cascade deletes verified
+- [x] Test files for each format
+- [x] Smoke test passes
 
 ---
 
@@ -120,3 +120,4 @@ Support PDF, DOCX, HTML, and Markdown file ingestion using Docling for document 
 | Timestamp | Entry |
 |:----------|:------|
 | 2026-03-07 | Task file created, status: Backlog |
+| 2026-03-07 | Implemented parsing via Docling. Updated `ingest_file` and verified file ingestion, metadata extraction, vector search, and cascading deletes across all formats. Moved to completion. |

@@ -8,6 +8,7 @@ from supabase import create_client
 from server.chunking import recursive_split
 from server.embeddings import embed_texts, embed_text
 from server.metadata import extract_metadata
+from server.parser import parse_document
 
 load_dotenv()
 
@@ -60,7 +61,11 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
     if not path.exists():
         return {"status": "error", "message": f"File not found: {path}"}
 
-    content = path.read_text(encoding="utf-8")
+    try:
+        content = parse_document(str(path))
+    except Exception as e:
+        return {"status": "error", "message": f"Failed to parse document: {str(e)}"}
+        
     content_hash = hashlib.sha256(content.encode()).hexdigest()
     filename = path.name
 
@@ -104,11 +109,23 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
     try:
         # Upload raw file to Supabase Storage
         storage_path = f"documents/{doc_id}/{filename}"
-        client.storage.from_("documents").upload(
-            storage_path,
-            content.encode("utf-8"),
-            {"content-type": "text/plain"},
-        )
+        
+        # Map file extensions to appropriate MIME types for Supabase Storage
+        mime_types = {
+            ".pdf": "application/pdf",
+            ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".html": "text/html",
+            ".md": "text/markdown",
+            ".txt": "text/plain"
+        }
+        content_type = mime_types.get(path.suffix.lower(), "application/octet-stream")
+        
+        with open(path, "rb") as f:
+            client.storage.from_("documents").upload(
+                storage_path,
+                f.read(),
+                {"content-type": content_type},
+            )
 
         # Chunk the content
         chunks = recursive_split(content)

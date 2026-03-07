@@ -50,11 +50,11 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Smoke test: ingest a document, verify metadata extracted and filterable
 
 ### Module 6: Multi-Format Support
-- [ ] Docling integration for document parsing
-- [ ] Support: PDF, DOCX, HTML, Markdown
-- [ ] Standard pipeline (fast, CPU-friendly)
-- [ ] Cascade deletes (delete document → delete all chunks)
-- [ ] Smoke test: ingest one file of each format successfully
+- [x] Docling integration for document parsing
+- [x] Support: PDF, DOCX, HTML, Markdown
+- [x] Standard pipeline (fast, CPU-friendly)
+- [x] Cascade deletes (delete document → delete all chunks)
+- [x] Smoke test: ingest one file of each format successfully
 
 ### Module 7: Hybrid Search + Reranking
 - [ ] BM25 keyword search implementation

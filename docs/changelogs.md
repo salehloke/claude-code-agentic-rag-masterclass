@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - 260307-000007 - Multi-Format Support (Module 6)
+
+### Added
+- `docling` library to `requirements.txt`
+- `server/parser.py` — unified document parsing API for PDF, DOCX, MD, and HTML files leveraging the IBM Docling models
+- Automated smoke test (`test_mcp_multiformat.py`) confirming cascading delete works and confirming cross-format ingestion & search
+
+### Changed
+- `server/main.py` — `ingest_file` now routes contents through `parse_document` and sets proper `content-type` MIME headers in Supabase Storage based on original file extensions
+
 ## [2026-03-07] - 260307-000006 - Metadata Extraction (Module 5)
 
 ### Added
