@@ -31,7 +31,8 @@ def extract_metadata(content: str) -> DocumentMetadata:
             summary="No content provided.",
             topics=[],
             document_type="unknown",
-            language="en"
+            language="en",
+            project=None,
         )
         
     client = _get_client()
@@ -42,8 +43,11 @@ def extract_metadata(content: str) -> DocumentMetadata:
     system_instruction = (
         "You are an expert document analyzer. Extract the title, a brief summary, "
         "a list of key topics, the document type (e.g., 'article', 'report', 'notes', 'technical documentation'), "
-        "and the 2-letter ISO language code for the following text. "
-        "Do not invent information. If you cannot determine the title, use the first sentence."
+        "the 2-letter ISO language code, and the project name for the following text. "
+        "Do not invent information. If you cannot determine the title, use the first sentence. "
+        "For project: return the name of the project, product, client, or initiative this document "
+        "belongs to (e.g. 'RAG Masterclass', 'Project Apollo', 'Client Acme'). "
+        "Return null if the document does not clearly belong to an identifiable project."
     )
     
     response = client.models.generate_content(
@@ -68,5 +72,6 @@ def extract_metadata(content: str) -> DocumentMetadata:
             summary=f"Failed to parse metadata: {str(e)}",
             topics=[],
             document_type="unknown",
-            language="en"
+            language="en",
+            project=None,
         )

@@ -29,3 +29,11 @@ class DocumentMetadata(BaseModel):
     topics: list[str]
     document_type: str
     language: str = "en"
+    project: str | None = None
+
+
+class Project(BaseModel):
+    id: str
+    name: str
+    description: str | None = None
+    created_at: datetime | None = None

@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from supabase import create_client
 
-from server.chunking import recursive_split
-from server.embeddings import embed_texts, embed_text
+from server.chunking import recursive_split, markdown_split
+from server.embeddings import embed_texts, embed_text, embed_chunks_with_context
 from server.metadata import extract_metadata
 from server.parser import parse_document
 from server.search import reciprocal_rank_fusion
@@ -50,16 +50,28 @@ def supabase_health() -> dict:
         return {"status": "error", "message": str(e)}
 
 @mcp.tool()
-def ingest_file(file_path: str, force: bool = False) -> dict:
+def ingest_file(
+    file_path: str,
+    force: bool = False,
+    project: str | None = None,
+    create_project: bool = False,
+) -> dict:
     """Ingest a file: read → chunk → embed → store in pgvector.
 
     Skips ingestion if content is unchanged (same hash). If the same filename
     exists with a different hash, the old document is deleted and re-ingested.
     Use force=True to re-ingest even when the hash matches.
 
+    When a project is identified (via explicit `project` arg or LLM extraction),
+    the document is linked to that project. If the project doesn't exist yet,
+    set create_project=True to create it automatically, or the tool will return
+    status='project_confirmation_needed' for you to confirm first.
+
     Args:
         file_path: Absolute or relative path to the file to ingest.
         force: Re-ingest even if content hash is unchanged (default False).
+        project: Optional project name to assign this document to.
+        create_project: Auto-create the project if it doesn't exist (default False).
     """
     path = Path(file_path).resolve()
     if not path.exists():
@@ -131,8 +143,12 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
                 {"content-type": content_type},
             )
 
-        # Chunk the content
-        chunks = recursive_split(content)
+        # Chunk the content — use structure-aware splitter for Markdown/text
+        MARKDOWN_EXTENSIONS = {".md", ".txt"}
+        if path.suffix.lower() in MARKDOWN_EXTENSIONS:
+            chunks = markdown_split(content)
+        else:
+            chunks = recursive_split(content)
 
         if not chunks:
             client.table("documents").update({
@@ -140,8 +156,8 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
             }).eq("id", doc_id).execute()
             return {"status": "error", "message": "No chunks produced from file"}
 
-        # Batch embed all chunks
-        embeddings = embed_texts(chunks)
+        # Batch embed all chunks (supports late chunking via EMBEDDING_PROVIDER=jina_late)
+        embeddings = embed_chunks_with_context(content, chunks)
 
         # Insert chunks with embeddings
         chunk_records = []
@@ -164,12 +180,36 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
             metadata = None
             print(f"Warning: Metadata extraction failed. {e}")
 
+        # Project resolution
+        project_name = project or (metadata.project if metadata else None)
+        project_id = None
+        final_status = "completed"
+        response_extra = {}
+
+        if project_name:
+            proj = client.table("projects").select("id").eq("name", project_name).execute()
+            if proj.data:
+                project_id = proj.data[0]["id"]
+            elif create_project:
+                new_proj = client.table("projects").insert({
+                    "name": project_name,
+                    "description": f"Auto-created during ingestion of '{filename}'",
+                }).execute()
+                project_id = new_proj.data[0]["id"]
+            else:
+                final_status = "project_confirmation_needed"
+                response_extra = {
+                    "suggested_project": project_name,
+                    "action": f"Call ingest_file again with project='{project_name}' and create_project=True.",
+                }
+
         # Update document status and metadata
         update_data = {
-            "status": "completed",
+            "status": final_status,
             "chunk_count": len(chunks),
+            "project_id": project_id,
         }
-        
+
         if metadata:
             update_data.update({
                 "title": metadata.title,
@@ -182,12 +222,14 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
         client.table("documents").update(update_data).eq("id", doc_id).execute()
 
         return {
-            "status": "completed",
+            "status": final_status,
             "document_id": doc_id,
             "filename": filename,
             "chunk_count": len(chunks),
             "content_hash": content_hash,
             "metadata_extracted": metadata is not None,
+            "project_id": project_id,
+            **response_extra,
         }
 
     except Exception as e:
@@ -200,12 +242,23 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
 
 
 @mcp.tool()
-def list_documents() -> list[dict]:
-    """List all ingested documents with their status and chunk count."""
+def list_documents(project: str | None = None) -> list[dict]:
+    """List all ingested documents with their status and chunk count.
+
+    Args:
+        project: Optional project name to filter documents by.
+    """
     client = _get_supabase()
-    result = client.table("documents").select(
-        "id, filename, status, chunk_count, content_hash, created_at"
-    ).order("created_at", desc=True).execute()
+    query = client.table("documents").select(
+        "id, filename, status, chunk_count, content_hash, created_at, project_id, projects(id, name)"
+    )
+    if project:
+        proj = client.table("projects").select("id").eq("name", project).execute()
+        if proj.data:
+            query = query.eq("project_id", proj.data[0]["id"])
+        else:
+            return []
+    result = query.order("created_at", desc=True).execute()
     return result.data
 
 
@@ -247,13 +300,14 @@ def delete_document(document_id: str) -> dict:
 
 @mcp.tool()
 def search_documents(
-    query: str, 
-    top_k: int = 5, 
+    query: str,
+    top_k: int = 5,
     threshold: float = 0.7,
     mode: str = "hybrid",
     rerank: bool = False,
     document_type: str | None = None,
-    topics: list[str] | None = None
+    topics: list[str] | None = None,
+    project: str | None = None,
 ) -> list[dict]:
     """Search ingested documents using vector similarity and optional metadata filters.
 
@@ -264,9 +318,19 @@ def search_documents(
         mode: Searching mode flag. One of "hybrid", "keyword", or "vector".
         document_type: Filter by a specific document type (e.g., 'article', 'report').
         topics: Filter to documents containing at least one of these topics.
+        project: Filter to documents belonging to this project name.
     """
     client = _get_supabase()
-    
+
+    # Resolve project name → UUID
+    filter_project_id = None
+    if project:
+        proj = client.table("projects").select("id").eq("name", project).execute()
+        if proj.data:
+            filter_project_id = proj.data[0]["id"]
+        else:
+            return [{"message": f"No project found with name '{project}'."}]
+
     # Execute Vector Search
     vector_results = []
     if mode in ("hybrid", "vector"):
@@ -276,10 +340,11 @@ def search_documents(
                 "search_chunks",
                 {
                     "query_embedding": query_embedding,
-                    "match_count": top_k * 2 if mode == "hybrid" else top_k, # Fetch more for fusion overlap
+                    "match_count": top_k * 2 if mode == "hybrid" else top_k,
                     "match_threshold": threshold,
                     "filter_document_type": document_type,
-                    "filter_topics": topics
+                    "filter_topics": topics,
+                    "filter_project_id": filter_project_id,
                 }
             ).execute()
             vector_results = response.data
@@ -297,20 +362,22 @@ def search_documents(
                 "keyword_search_chunks",
                 {
                     "search_query": query,
-                    "match_count": top_k * 2 if mode == "hybrid" else top_k
+                    "match_count": top_k * 2 if mode == "hybrid" else top_k,
+                    "filter_project_id": filter_project_id,
                 }
             ).execute()
             keyword_results = response.data
-            
-            # Optionally filter metadata locally if keyword_search_chunks doesn't
+
+            # Local metadata filter (document_type / topics) for keyword results
             if document_type or topics:
                 def is_match(row):
-                    if document_type and row.get("document_type") != document_type: return False
-                    if topics and not (set(topics) & set(row.get("topics", []))): return False
+                    if document_type and row.get("document_type") != document_type:
+                        return False
+                    if topics and not (set(topics) & set(row.get("topics", []))):
+                        return False
                     return True
-                    
-                # NOTE: For a real production app we'd add filter arguments directly to keyword_search_chunks!
-                
+                keyword_results = [r for r in keyword_results if is_match(r)]
+
         except Exception as e:
             if mode == "keyword":
                 return [{"error": f"Failed keyword search: {str(e)}"}]
@@ -335,6 +402,49 @@ def search_documents(
         return [{"message": f"No relevant chunks found."}]
         
     return results
+
+@mcp.tool()
+def list_projects() -> list[dict]:
+    """List all projects with document counts."""
+    client = _get_supabase()
+    projects = client.table("projects").select("id, name, description, created_at").order(
+        "name"
+    ).execute()
+
+    if not projects.data:
+        return []
+
+    # Attach document counts
+    result = []
+    for proj in projects.data:
+        count_resp = client.table("documents").select(
+            "id", count="exact"
+        ).eq("project_id", proj["id"]).execute()
+        result.append({
+            **proj,
+            "document_count": count_resp.count or 0,
+        })
+    return result
+
+
+@mcp.tool()
+def create_project(name: str, description: str = "") -> dict:
+    """Create a new project. Returns an error if the name already exists.
+
+    Args:
+        name: Unique project name.
+        description: Optional description of the project.
+    """
+    client = _get_supabase()
+    existing = client.table("projects").select("id").eq("name", name).execute()
+    if existing.data:
+        return {"status": "error", "message": f"Project '{name}' already exists.", "id": existing.data[0]["id"]}
+    result = client.table("projects").insert({
+        "name": name,
+        "description": description or None,
+    }).execute()
+    return {"status": "created", **result.data[0]}
+
 
 def _get_sql_reader_connection():
     """Get a psycopg2 connection using the read-only role."""

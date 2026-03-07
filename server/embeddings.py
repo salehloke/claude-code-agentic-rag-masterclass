@@ -46,3 +46,18 @@ def embed_texts(texts: list[str], task_type: str = "RETRIEVAL_DOCUMENT") -> list
 def embed_text(text: str, task_type: str = "RETRIEVAL_QUERY") -> list[float]:
     """Embed a single text string. Defaults to RETRIEVAL_QUERY for search queries."""
     return embed_texts([text], task_type=task_type)[0]
+
+
+def embed_chunks_with_context(
+    full_document: str,
+    chunks: list[str],
+    task_type: str = "RETRIEVAL_DOCUMENT",
+) -> list[list[float]]:
+    """Route chunk embedding through the configured provider.
+    Only jina_late uses full_document; gemini/ollama call embed_texts() as before."""
+    import os
+    provider = os.getenv("EMBEDDING_PROVIDER", "gemini")
+    if provider == "jina_late":
+        from server.late_chunking import late_chunk_embed
+        return late_chunk_embed(full_document, chunks)
+    return embed_texts(chunks, task_type=task_type)
