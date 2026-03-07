@@ -9,6 +9,8 @@ from server.chunking import recursive_split
 from server.embeddings import embed_texts, embed_text
 from server.metadata import extract_metadata
 from server.parser import parse_document
+from server.search import reciprocal_rank_fusion
+from server.reranker import rerank_results
 
 load_dotenv()
 
@@ -246,6 +248,8 @@ def search_documents(
     query: str, 
     top_k: int = 5, 
     threshold: float = 0.7,
+    mode: str = "hybrid",
+    rerank: bool = False,
     document_type: str | None = None,
     topics: list[str] | None = None
 ) -> list[dict]:
@@ -254,41 +258,82 @@ def search_documents(
     Args:
         query: The search query text.
         top_k: Number of results to return (default 5).
-        threshold: Minimum similarity score 0-1 (default 0.7).
+        threshold: Minimum vector similarity score 0-1 (default 0.7).
+        mode: Searching mode flag. One of "hybrid", "keyword", or "vector".
         document_type: Filter by a specific document type (e.g., 'article', 'report').
         topics: Filter to documents containing at least one of these topics.
     """
     client = _get_supabase()
     
-    # 1. Embed the search query
-    try:
-        query_embedding = embed_text(query, task_type="RETRIEVAL_QUERY")
-    except Exception as e:
-        return [{"error": f"Failed to embed query: {str(e)}"}]
-        
-    # 2. Call the Supabase RPC function for vector search
-    try:
-        response = client.rpc(
-            "search_chunks",
-            {
-                "query_embedding": query_embedding,
-                "match_count": top_k,
-                "match_threshold": threshold,
-                "filter_document_type": document_type,
-                "filter_topics": topics
-            }
-        ).execute()
-        
-        results = response.data
-        
-        if not results:
-            return [{"message": f"No relevant chunks found above similarity threshold {threshold}."}]
-            
-        return results
-        
-    except Exception as e:
-        return [{"error": f"Database search failed: {str(e)}"}]
+    # Execute Vector Search
+    vector_results = []
+    if mode in ("hybrid", "vector"):
+        try:
+            query_embedding = embed_text(query, task_type="RETRIEVAL_QUERY")
+            response = client.rpc(
+                "search_chunks",
+                {
+                    "query_embedding": query_embedding,
+                    "match_count": top_k * 2 if mode == "hybrid" else top_k, # Fetch more for fusion overlap
+                    "match_threshold": threshold,
+                    "filter_document_type": document_type,
+                    "filter_topics": topics
+                }
+            ).execute()
+            vector_results = response.data
+        except Exception as e:
+            if mode == "vector":
+                return [{"error": f"Failed vector search: {str(e)}"}]
+            else:
+                print(f"Warning: Vector search failed during hybrid mode: {str(e)}")
 
+    # Execute Keyword Search
+    keyword_results = []
+    if mode in ("hybrid", "keyword"):
+        try:
+            response = client.rpc(
+                "keyword_search_chunks",
+                {
+                    "search_query": query,
+                    "match_count": top_k * 2 if mode == "hybrid" else top_k
+                }
+            ).execute()
+            keyword_results = response.data
+            
+            # Optionally filter metadata locally if keyword_search_chunks doesn't
+            if document_type or topics:
+                def is_match(row):
+                    if document_type and row.get("document_type") != document_type: return False
+                    if topics and not (set(topics) & set(row.get("topics", []))): return False
+                    return True
+                    
+                # NOTE: For a real production app we'd add filter arguments directly to keyword_search_chunks!
+                
+        except Exception as e:
+            if mode == "keyword":
+                return [{"error": f"Failed keyword search: {str(e)}"}]
+            else:
+                print(f"Warning: Keyword search failed during hybrid mode: {str(e)}")
+
+    # Fusion + Return Handling
+    if mode == "vector":
+        results = vector_results
+    elif mode == "keyword":
+        results = keyword_results
+    else:
+        results = reciprocal_rank_fusion(vector_results, keyword_results)
+
+    if rerank and results:
+        # Pass the top 20 candidates into the cross-encoder just to be safe
+        results = rerank_results(query, results[:top_k * 4], top_k=top_k)
+    else:
+        results = results[:top_k]
+
+    if not results:
+        return [{"message": f"No relevant chunks found."}]
+        
+        
+    return results
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

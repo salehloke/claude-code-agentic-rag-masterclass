@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - 260307-000008 - Hybrid Search and Reranking (Module 7)
+
+### Added
+- Created postgres function `keyword_search_chunks` alongside `fts` TSVECTOR columns backed by a GIN index in `chunks` table for high speed BM25 keyword matches
+- Merged Vector and Keyword algorithms in Python using standard Reciprocal Rank Fusion (RRF) algorithm implementation in `server/search.py`
+- Implemented state-of-the-art re-scoring via cross-encoding (`ms-marco-MiniLM-L-6-v2`) inside a new `server/reranker.py` file, utilizing `sentence-transformers`
+- End-to-end Python smoke test evaluating multi-vector logic (`test_mcp_hybrid_search.py`)
+
+### Changed
+- Refactored `search_documents` MCP tool to optionally accept `mode` variables (`hybrid`, `vector`, `keyword`) and the `rerank` flag to toggle components natively
+
 ## [2026-03-07] - 260307-000007 - Multi-Format Support (Module 6)
 
 ### Added

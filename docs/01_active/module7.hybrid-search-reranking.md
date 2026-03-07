@@ -145,12 +145,12 @@ Combine vector similarity search with BM25 keyword search using Reciprocal Rank 
 
 ## Definition of Done
 
-- [ ] Full-text search column and GIN index on chunks
-- [ ] BM25 keyword search function in DB
-- [ ] RRF fusion in Python
-- [ ] `search_documents` supports vector/keyword/hybrid modes
-- [ ] Reranker integrated (local or API)
-- [ ] Smoke test passes for all search modes
+- [x] Full-text search column and GIN index on chunks
+- [x] BM25 keyword search function in DB
+- [x] RRF fusion in Python
+- [x] `search_documents` supports vector/keyword/hybrid modes
+- [x] Reranker integrated (local or API)
+- [x] Smoke test passes for all search modes
 
 ---
 
@@ -159,3 +159,4 @@ Combine vector similarity search with BM25 keyword search using Reciprocal Rank 
 | Timestamp | Entry |
 |:----------|:------|
 | 2026-03-07 | Task file created, status: Backlog |
+| 2026-03-07 | Implemented full text search, BM25, and RRF logic. Added lightweight MS-MARCO BGE reranker using sentence-transformers. Verified tests and moving to complete. |

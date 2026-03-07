@@ -57,11 +57,11 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Smoke test: ingest one file of each format successfully
 
 ### Module 7: Hybrid Search + Reranking
-- [ ] BM25 keyword search implementation
-- [ ] Hybrid search: combine semantic (vector) + keyword (BM25) results
-- [ ] RRF (Reciprocal Rank Fusion) to normalize and merge scores
-- [ ] Reranker integration (local bge-reranker or Cohere)
-- [ ] Smoke test: query with a specific product code, verify keyword result surfaces
+- [x] BM25 keyword search implementation
+- [x] Hybrid search: combine semantic (vector) + keyword (BM25) results
+- [x] RRF (Reciprocal Rank Fusion) to normalize and merge scores
+- [x] Reranker integration (local bge-reranker or Cohere)
+- [x] Smoke test: query with a specific product code, verify keyword result surfaces
 
 ### Module 8: Additional Tools
 - [ ] `web_search` MCP tool (fallback when docs don't have the answer)
