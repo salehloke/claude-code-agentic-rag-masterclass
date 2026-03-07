@@ -124,13 +124,13 @@ GEMINI_CHAT_MODEL=gemini-2.0-flash
 
 ## Definition of Done
 
-- [ ] Metadata columns on documents table
-- [ ] `DocumentMetadata` Pydantic schema
-- [ ] LLM extraction function via Gemini API
-- [ ] Metadata populated during ingestion
-- [ ] `search_documents` supports metadata filters
-- [ ] `.env.example` updated with `GEMINI_CHAT_MODEL`
-- [ ] Smoke test passes
+- [x] Metadata columns on documents table
+- [x] `DocumentMetadata` Pydantic schema
+- [x] LLM extraction function via Gemini API
+- [x] Metadata populated during ingestion
+- [x] `search_documents` supports metadata filters
+- [x] `.env.example` updated with `GEMINI_CHAT_MODEL`
+- [x] Smoke test passes
 
 ---
 
@@ -139,3 +139,4 @@ GEMINI_CHAT_MODEL=gemini-2.0-flash
 | Timestamp | Entry |
 |:----------|:------|
 | 2026-03-07 | Task file created, status: Backlog |
+| 2026-03-07 | Implemented Supabase migration, Pydantic schema, and Gemini structured extraction. Modified `ingest_file` and `search_documents`. Smoke test verified successfully. Moved to completion. |

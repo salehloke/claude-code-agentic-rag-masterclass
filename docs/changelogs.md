@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - 260307-000006 - Metadata Extraction (Module 5)
+
+### Added
+- `supabase/migrations/20260307122049_add_document_metadata.sql` — Columns for title, summary, topics, document_type, language
+- `supabase/migrations/20260307122204_search_chunks_with_metadata.sql` — Replaced search function to support metadata filtering
+- `server/metadata.py` — Added Gemini API structured extraction using `DocumentMetadata`
+- `test_mcp_metadata.py` — Smoke test for extraction and filtered search
+
+### Changed
+- `server/schemas.py` — Added `DocumentMetadata`
+- `server/main.py` — Updated `search_documents` with optional type/topic filters, and `ingest_file` to populate metadata
+
 ## [2026-03-07] - 260307-000005 - Record Manager (Module 4)
 
 ### Added

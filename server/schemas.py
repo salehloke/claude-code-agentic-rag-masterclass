@@ -21,3 +21,11 @@ class Chunk(BaseModel):
     chunk_index: int
     token_count: int | None = None
     created_at: datetime | None = None
+
+
+class DocumentMetadata(BaseModel):
+    title: str
+    summary: str
+    topics: list[str]
+    document_type: str
+    language: str = "en"

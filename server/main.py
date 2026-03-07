@@ -7,6 +7,7 @@ from supabase import create_client
 
 from server.chunking import recursive_split
 from server.embeddings import embed_texts, embed_text
+from server.metadata import extract_metadata
 
 load_dotenv()
 
@@ -134,11 +135,30 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
 
         client.table("chunks").insert(chunk_records).execute()
 
-        # Update document status
-        client.table("documents").update({
+        # Extract metadata
+        try:
+            metadata = extract_metadata(content)
+        except Exception as e:
+            # Fallback if LLM extraction completely blows up
+            metadata = None
+            print(f"Warning: Metadata extraction failed. {e}")
+
+        # Update document status and metadata
+        update_data = {
             "status": "completed",
             "chunk_count": len(chunks),
-        }).eq("id", doc_id).execute()
+        }
+        
+        if metadata:
+            update_data.update({
+                "title": metadata.title,
+                "summary": metadata.summary,
+                "topics": metadata.topics,
+                "document_type": metadata.document_type,
+                "language": metadata.language,
+            })
+
+        client.table("documents").update(update_data).eq("id", doc_id).execute()
 
         return {
             "status": "completed",
@@ -146,9 +166,12 @@ def ingest_file(file_path: str, force: bool = False) -> dict:
             "filename": filename,
             "chunk_count": len(chunks),
             "content_hash": content_hash,
+            "metadata_extracted": metadata is not None,
         }
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         client.table("documents").update({
             "status": "failed",
         }).eq("id", doc_id).execute()
@@ -202,13 +225,21 @@ def delete_document(document_id: str) -> dict:
 
 
 @mcp.tool()
-def search_documents(query: str, top_k: int = 5, threshold: float = 0.7) -> list[dict]:
-    """Search ingested documents using vector similarity.
+def search_documents(
+    query: str, 
+    top_k: int = 5, 
+    threshold: float = 0.7,
+    document_type: str | None = None,
+    topics: list[str] | None = None
+) -> list[dict]:
+    """Search ingested documents using vector similarity and optional metadata filters.
 
     Args:
         query: The search query text.
         top_k: Number of results to return (default 5).
         threshold: Minimum similarity score 0-1 (default 0.7).
+        document_type: Filter by a specific document type (e.g., 'article', 'report').
+        topics: Filter to documents containing at least one of these topics.
     """
     client = _get_supabase()
     
@@ -225,7 +256,9 @@ def search_documents(query: str, top_k: int = 5, threshold: float = 0.7) -> list
             {
                 "query_embedding": query_embedding,
                 "match_count": top_k,
-                "match_threshold": threshold
+                "match_threshold": threshold,
+                "filter_document_type": document_type,
+                "filter_topics": topics
             }
         ).execute()
         

@@ -43,11 +43,11 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Smoke test: ingest same file twice, verify no duplicate chunks
 
 ### Module 5: Metadata Extraction
-- [ ] `DocumentMetadata` Pydantic schema (title, summary, topics, document_type, language)
-- [ ] LLM structured extraction via Gemini API from first 8,000 characters
-- [ ] Store metadata in DB alongside chunks
-- [ ] Metadata-filtered retrieval (filter search space before semantic match)
-- [ ] Smoke test: ingest a document, verify metadata extracted and filterable
+- [x] `DocumentMetadata` Pydantic schema (title, summary, topics, document_type, language)
+- [x] LLM structured extraction via Gemini API from first 8,000 characters
+- [x] Store metadata in DB alongside chunks
+- [x] Metadata-filtered retrieval (filter search space before semantic match)
+- [x] Smoke test: ingest a document, verify metadata extracted and filterable
 
 ### Module 6: Multi-Format Support
 - [ ] Docling integration for document parsing
