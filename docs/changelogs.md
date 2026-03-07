@@ -2,6 +2,44 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - Fix 401 Credentials Exposure in Chat UI
+
+### Fixed
+- `server/api.py`: Split `except Exception as e` into `except HTTPException: raise` + `except Exception` to prevent GoTrue auth payload (email, password) from leaking into 401 error response body.
+- `frontend/src/pages/Chat.tsx`: Added `res.ok` guard before SSE body processing — non-2xx responses now throw a clean JS error routed to the existing catch block instead of rendering raw JSON in the chat.
+
+## [2026-03-07] - Late Chunking + Project Categorization
+
+### Added
+- `server/late_chunking.py` — Late chunking via `jinaai/jina-embeddings-v2-base-en` (768 dims, 8192-token context). Single forward pass over full document; mean-pools per-chunk token spans. Gracefully falls back to CLS-pooling per chunk if document exceeds 8192 tokens.
+- `embed_chunks_with_context()` dispatcher in `server/embeddings.py` — routes to Jina late chunking when `EMBEDDING_PROVIDER=jina_late`, otherwise falls back to `embed_texts()` (Gemini/Ollama unchanged).
+- `list_projects` MCP tool — lists all projects with document counts.
+- `create_project` MCP tool — creates a new project (returns error if name already exists).
+- `Project` Pydantic model in `server/schemas.py`.
+- `project: str | None = None` field on `DocumentMetadata` for LLM-extracted project attribution.
+- `supabase/migrations/20260307190000_create_projects_table.sql` — `projects` table with RLS, name unique index, `sql_reader` grant.
+- `supabase/migrations/20260307190001_add_project_to_documents.sql` — `project_id uuid` FK on `documents` (on delete set null).
+- `supabase/migrations/20260307190002_update_search_functions_project.sql` — `search_chunks` and `keyword_search_chunks` updated with `filter_project_id uuid` parameter and `project_id` in result set.
+- `einops==0.8.2` dependency in `server/requirements.txt`.
+
+### Changed
+- `ingest_file` — added `project: str | None` and `create_project: bool` params. Resolves project by name, links document, or returns `status: project_confirmation_needed` when project is unknown and `create_project=False`.
+- `list_documents` — added `project: str | None` filter param; select now includes `projects(id, name)` join.
+- `search_documents` — added `project: str | None` filter param; passes `filter_project_id` to both RPC functions.
+- `server/metadata.py` — system prompt updated to extract project name; all `DocumentMetadata` fallback instantiations include `project=None`.
+- `ingest_file` embedding call replaced with `embed_chunks_with_context(content, chunks)`.
+
+## [2026-03-07] - Chunking Improvements
+
+### Added
+- `markdown_split()` in `server/chunking.py` — splits on `## ` heading boundaries before falling back to `recursive_split()`, keeping each section in one chunk
+- `_handle_section()` helper — returns section as single chunk if it fits, otherwise splits body and re-prepends heading to each sub-chunk
+- `_apply_paragraph_aware_overlap()` helper — overlap respects `\n\n` paragraph boundaries then word boundaries instead of raw character slicing
+
+### Changed
+- `recursive_split()` default `chunk_size` bumped 1000 → 1500 to reduce undersized orphan chunks
+- `ingest_file` in `server/main.py` routes `.md` and `.txt` files through `markdown_split()` and all other formats through `recursive_split()`
+
 ## [2026-03-07] - 260307-000009 - SQL Database Tools (Module 8)
 
 ### Added

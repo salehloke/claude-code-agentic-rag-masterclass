@@ -106,7 +106,7 @@ Due to complexity, consider splitting into:
   - `DELETE /documents/{id}` — delete document
 - [ ] Auth middleware: validate Supabase JWT from Authorization header
 - [ ] Call the same core functions that MCP tools use (chunking, embedding, search)
-- [ ] SSE streaming for chat responses using Gemini API
+- [ ] SSE streaming for chat responses using local Ollama model (`qwen2.5:3b`)
 
 **Validation**: `curl POST /chat` returns SSE stream.
 

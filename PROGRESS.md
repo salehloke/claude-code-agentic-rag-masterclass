@@ -70,6 +70,12 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Isolated connection string (`SQL_READER_URL`) on transaction pooler port 54322
 - [x] Smoke test: Execute CTE select statements, and verify rejection of DELETE statements
 
+### Enhancements (post-module 8)
+- [x] Late chunking via `jina-embeddings-v2-base-en` (`server/late_chunking.py`) — toggled by `EMBEDDING_PROVIDER=jina_late`
+- [x] Project categorization — `projects` table, `list_projects` / `create_project` tools, project filter on `search_documents` / `list_documents`
+- [x] LLM auto-extraction of `project` field from document content (extended `DocumentMetadata`)
+- [x] `project_confirmation_needed` flow in `ingest_file` when new project detected but `create_project=False`
+
 ### Module 9: Web Chat UI
 - [ ] React + Vite + Tailwind + shadcn/ui frontend scaffold
 - [ ] FastAPI backend wrapping core RAG functions (same functions MCP tools use)
