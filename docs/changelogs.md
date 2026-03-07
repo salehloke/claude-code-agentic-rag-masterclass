@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - 260307-000005 - Record Manager (Module 4)
+
+### Added
+- `supabase/migrations/20260307041258_add_content_hash_index.sql` — index on `documents(content_hash)` for fast dedup lookups
+- `test_module4.py` — end-to-end smoke test for deduplication and re-ingestion
+
+### Changed
+- `server/main.py` `ingest_file` — added `force: bool = False` parameter; skips ingestion if same filename + same hash; deletes old doc and re-ingests if same filename + different hash
+- `README.md` — updated tech stack (Gemini API), module list (9 modules, MCP-first), and added Testing section
+
 ## [2026-03-07] - 260307-000004 - Retrieval Tool (Module 3)
 
 ### Added

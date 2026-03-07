@@ -44,11 +44,16 @@ def supabase_health() -> dict:
         return {"status": "error", "message": str(e)}
 
 @mcp.tool()
-def ingest_file(file_path: str) -> dict:
+def ingest_file(file_path: str, force: bool = False) -> dict:
     """Ingest a file: read → chunk → embed → store in pgvector.
+
+    Skips ingestion if content is unchanged (same hash). If the same filename
+    exists with a different hash, the old document is deleted and re-ingested.
+    Use force=True to re-ingest even when the hash matches.
 
     Args:
         file_path: Absolute or relative path to the file to ingest.
+        force: Re-ingest even if content hash is unchanged (default False).
     """
     path = Path(file_path).resolve()
     if not path.exists():
@@ -59,6 +64,31 @@ def ingest_file(file_path: str) -> dict:
     filename = path.name
 
     client = _get_supabase()
+
+    # Check for existing document with same filename
+    same_name_result = client.table("documents").select("id, content_hash").eq(
+        "filename", filename
+    ).execute()
+
+    if same_name_result.data:
+        existing = same_name_result.data[0]
+        if existing["content_hash"] == content_hash and not force:
+            # Same content — skip
+            return {
+                "status": "skipped",
+                "reason": "duplicate",
+                "existing_document_id": existing["id"],
+                "filename": filename,
+            }
+        else:
+            # Same filename, different hash (or force=True) — delete old and re-ingest
+            old_id = existing["id"]
+            storage_path = f"documents/{old_id}/{filename}"
+            try:
+                client.storage.from_("documents").remove([storage_path])
+            except Exception:
+                pass
+            client.table("documents").delete().eq("id", old_id).execute()
 
     # Create document record
     doc_result = client.table("documents").insert({

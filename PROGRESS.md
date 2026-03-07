@@ -37,10 +37,10 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Smoke test: ask Claude Code a question, verify it calls `search_documents` and returns grounded answer
 
 ### Module 4: Record Manager
-- [ ] SHA-256 content hashing on ingest
-- [ ] Deduplication: skip if hash already exists and unchanged
-- [ ] Delete old chunks + re-embed on file modification (prevent orphan chunks)
-- [ ] Smoke test: ingest same file twice, verify no duplicate chunks
+- [x] SHA-256 content hashing on ingest
+- [x] Deduplication: skip if hash already exists and unchanged
+- [x] Delete old chunks + re-embed on file modification (prevent orphan chunks)
+- [x] Smoke test: ingest same file twice, verify no duplicate chunks
 
 ### Module 5: Metadata Extraction
 - [ ] `DocumentMetadata` Pydantic schema (title, summary, topics, document_type, language)
