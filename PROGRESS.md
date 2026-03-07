@@ -64,11 +64,11 @@ Track your progress through the masterclass. Update this file as you complete mo
 - [x] Smoke test: query with a specific product code, verify keyword result surfaces
 
 ### Module 8: Additional Tools
-- [ ] `web_search` MCP tool (fallback when docs don't have the answer)
-- [ ] `query_sql` MCP tool (text-to-SQL)
-- [ ] Read-only Postgres user (`sql_reader`) with restricted permissions
-- [ ] Isolated connection string (`SQL_READER_URL`) on transaction pooler port 6543
-- [ ] Smoke test: ask a factual question not in docs, verify web search fallback fires
+- [x] `get_schema` MCP tool (database schema mapping)
+- [x] `query_sql` MCP tool (text-to-SQL)
+- [x] Read-only Postgres user (`sql_reader`) with restricted permissions
+- [x] Isolated connection string (`SQL_READER_URL`) on transaction pooler port 54322
+- [x] Smoke test: Execute CTE select statements, and verify rejection of DELETE statements
 
 ### Module 9: Web Chat UI
 - [ ] React + Vite + Tailwind + shadcn/ui frontend scaffold

@@ -1,6 +1,8 @@
 import os
 import hashlib
 from pathlib import Path
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
 from supabase import create_client
@@ -332,8 +334,72 @@ def search_documents(
     if not results:
         return [{"message": f"No relevant chunks found."}]
         
-        
     return results
+
+def _get_sql_reader_connection():
+    """Get a psycopg2 connection using the read-only role."""
+    conn_url = os.getenv("SQL_READER_URL")
+    if not conn_url:
+        raise ValueError("SQL_READER_URL environment variable is not set")
+    return psycopg2.connect(conn_url, cursor_factory=RealDictCursor)
+
+
+@mcp.tool()
+def get_schema() -> list[dict]:
+    """Get the database schema (tables, columns, types) for SQL query construction.
+    
+    Returns:
+        List of dictionaries containing table_name, column_name, and data_type
+        for all tables in the public schema.
+    """
+    query = """
+    SELECT table_name, column_name, data_type
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+    ORDER BY table_name, ordinal_position;
+    """
+    
+    try:
+        with _get_sql_reader_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(query)
+                return cur.fetchall()
+    except Exception as e:
+        return [{"error": f"Failed to fetch schema: {str(e)}"}]
+
+
+@mcp.tool()
+def query_sql(sql: str) -> list[dict]:
+    """Execute a read-only SQL query against the database.
+    
+    This tool is restricted to executing SELECT queries. It uses a dedicated
+    read-only Postgres role to ensure safety.
+
+    Args:
+        sql: A valid Postgres SQL SELECT query to execute.
+    
+    Returns:
+        A list of rows matching the query, or an error dictionary.
+    """
+    # Basic injection/intent guardrail on the application layer
+    sql_upper = sql.strip().upper()
+    if not (sql_upper.startswith("SELECT") or sql_upper.startswith("WITH")):
+        return [{"error": "Only SELECT or WITH queries are permitted."}]
+        
+    try:
+        with _get_sql_reader_connection() as conn:
+            # Set a very tight timeout so bad queries don't hang the worker
+            with conn.cursor() as cur:
+                cur.execute("SET statement_timeout = 10000;") # 10 seconds
+                cur.execute(sql)
+                results = cur.fetchall()
+                
+                if not results:
+                    return [{"message": "Query returned 0 rows."}]
+                return results
+    except Exception as e:
+        return [{"error": f"Query failed: {str(e)}", "sql": sql}]
+
 
 if __name__ == "__main__":
     mcp.run(transport="stdio")

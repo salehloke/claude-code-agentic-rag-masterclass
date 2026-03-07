@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2026-03-07] - 260307-000009 - SQL Database Tools (Module 8)
+
+### Added
+- Created postgres read-only role `sql_reader` via Supabase migrations, strictly constrained to `SELECT` ops
+- Implemented `get_schema` MCP Tool using psycopg2 to expose public table/column constraints dynamically to the AI agent
+- Implemented `query_sql` MCP Tool. Hard-coded application guardrails to verify SQL intent starts with SELECT or WITH.
+- End-to-end Python smoke test evaluating CTE and error handling workflows (`test_mcp_sql.py`)
+
+### Changed
+- Removed Web Search fallback objectives since modern AI tools (like Claude Code) feature browser tools natively.
+
+
 ## [2026-03-07] - 260307-000008 - Hybrid Search and Reranking (Module 7)
 
 ### Added
