@@ -12,35 +12,35 @@ sequenceDiagram
     participant MCP as RAG Server (FastMCP)
     participant Storage as Supabase Storage
     participant DB as Supabase Postgres
-    participant Gemini as Gemini API
+    participant Ollama as Ollama (Local)
 
     Agent->>MCP: ingest_file("doc.pdf")
-    
+
     activate MCP
     MCP->>MCP: calculate SHA-256 hash
     MCP->>DB: Check if hash exists
-    
+
     alt Hash exists
         DB-->>MCP: Returns true
         MCP-->>Agent: return "Already ingested"
     else Hash is new
         MCP->>Storage: Upload raw binary file
-        
+
         MCP->>MCP: parse_document() via Docling
         MCP->>MCP: recursive_split(markdown)
-        
+
         par Parallel Operations
-            MCP->>Gemini: embed_texts(chunks)
-            Gemini-->>MCP: Returns 768-dim Vectors
+            MCP->>Ollama: embed_texts(chunks) [nomic-embed-text]
+            Ollama-->>MCP: Returns 768-dim Vectors
         and
-            MCP->>Gemini: extract_metadata(top 8000 chars)
-            Gemini-->>MCP: Returns JSON Schema (Title, Tags)
+            MCP->>Ollama: extract_metadata(top 8000 chars) [qwen2.5:3b]
+            Ollama-->>MCP: Returns JSON Schema (Title, Tags)
         end
-        
+
         MCP->>DB: INSERT into documents
         MCP->>DB: INSERT into chunks (content, embedding)
         note right of DB: Postgres calculates `fts` (TSVECTOR)<br/>automatically on insert.
-        
+
         MCP-->>Agent: return "Ingestion Complete"
     end
     deactivate MCP
@@ -54,18 +54,18 @@ This diagram illustrates the dynamic hybrid search + reranking flow when the AI 
 sequenceDiagram
     actor Agent as AI Agent (MCP Client)
     participant MCP as RAG Server (FastMCP)
-    participant Gemini as Gemini API
+    participant Ollama as Ollama (Local)
     participant DB as Supabase Postgres
     participant CrossEncoder as MS-MARCO Reranker
 
     Agent->>MCP: search_documents(query="foo", mode="hybrid", rerank=true)
-    
+
     activate MCP
-    
+
     par Parallel Search Execution
         %% Vector Search Path
-        MCP->>Gemini: embed_text("foo")
-        Gemini-->>MCP: Returns 768-dim Vector
+        MCP->>Ollama: embed_text("foo") [nomic-embed-text]
+        Ollama-->>MCP: Returns 768-dim Vector
         MCP->>DB: rpc("search_chunks", {vector, filters})
         note over DB: Executes Cosine Similarity (pgvector)
         DB-->>MCP: Returns Top K Semantic matches

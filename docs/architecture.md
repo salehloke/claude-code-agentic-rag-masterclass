@@ -1,6 +1,6 @@
 # System Architecture
 
-The Agentic RAG system is built around the **Model Context Protocol (MCP)**, functioning as an external tool server that gives autonomous AI agents (like Claude Code or Gemini Antigravity) semantic search and context retrieval capabilities.
+The Agentic RAG system is built around the **Model Context Protocol (MCP)**, functioning as an external tool server that gives autonomous AI agents (like Claude Code) semantic search and context retrieval capabilities.
 
 Below are the architectural C4 Model diagrams mapping the relationships of the system.
 
@@ -14,15 +14,15 @@ C4Context
 
     Person(user, "User", "A developer interacting via the terminal or chat interface.")
     
-    System_Ext(agent, "AI Agent (Claude / Gemini)", "Local or remote LLM acting as the primary intelligent agent. Executes tools via MCP.")
-    
+    System_Ext(agent, "AI Agent (Claude Code)", "Local LLM acting as the primary intelligent agent. Executes tools via MCP.")
+
     System(rag, "RAG MCP Server", "Provides document ingestion, vector retrieval, and direct SQL analytics capabilities to the Agent.")
-    
-    System_Ext(gemini_api, "Gemini API", "External LLM service providing dense text embeddings and lightweight metadata extraction.")
-    
+
+    System_Ext(ollama, "Ollama (Local)", "Local inference runtime providing dense text embeddings (nomic-embed-text) and metadata extraction (qwen2.5:3b).")
+
     Rel(user, agent, "Chats with and delegates tasks to", "Text")
     Rel(agent, rag, "Executes tools (ingest, search, sql)", "MCP Protocol (JSON-RPC over stdio)")
-    Rel(rag, gemini_api, "Extracts metadata / Generates embeddings", "HTTPS/REST")
+    Rel(rag, ollama, "Extracts metadata / Generates embeddings", "HTTP (localhost:11434)")
 ```
 
 ## Level 2: Container Diagram
@@ -33,22 +33,22 @@ This diagram dives deeper into the internal containers that make up the RAG MCP 
 C4Container
     title Container diagram for RAG MCP System
 
-    System_Ext(agent, "AI Agent", "Client executing MCP tool calls.")
-    System_Ext(gemini_api, "Gemini API", "Embedding and GenAI Service.")
+    System_Ext(agent, "AI Agent (Claude Code)", "Client executing MCP tool calls.")
+    System_Ext(ollama, "Ollama (Local)", "Local inference runtime. nomic-embed-text for embeddings, qwen2.5:3b for metadata extraction.")
 
     System_Boundary(rag_system, "RAG MCP Server Stack") {
         Container(mcp_server, "FastMCP Python Server", "Python", "Exposes endpoints, routes inputs, orchestrates NLP models and connections.")
-        
+
         ContainerDb(supabase_pg, "Supabase Postgres", "PostgreSQL", "Stores document records, vector embeddings, and provides text-to-SQL data via a read-only role.")
         ContainerDb(supabase_storage, "Supabase Storage", "S3 API", "Stores original, unmodified raw document binaries (PDF, HTML, etc).")
     }
 
     Rel(agent, mcp_server, "Calls MCP Tools via stdio", "stdio")
-    
+
     Rel(mcp_server, supabase_storage, "Uploads raw files / Deletes raw files", "REST / SDK")
     Rel(mcp_server, supabase_pg, "Queries database (Vector, FTS, Raw SQL) / Stores Chunks", "REST / psycopg2")
-    Rel(mcp_server, gemini_api, "embed_texts() / extract_metadata()", "HTTPS")
-    
+    Rel(mcp_server, ollama, "embed_texts() / extract_metadata()", "HTTP (localhost:11434)")
+
     BiRel(supabase_pg, supabase_storage, "Cascade deletes via foreign keys", "Internal")
 ```
 

@@ -11,8 +11,8 @@ cryptography==46.0.5
 deprecation==2.1.0
 distro==1.9.0
 fsspec==2026.2.0
-google-auth==2.49.0
-google-genai==1.66.0
+# google-auth==2.49.0  # no longer used (Gemini replaced by Ollama)
+# google-genai==1.66.0  # no longer used (Gemini replaced by Ollama)
 h11==0.16.0
 h2==4.3.0
 hpack==4.1.0

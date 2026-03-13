@@ -1,31 +1,21 @@
 import os
 import json
+import ollama
 from dotenv import load_dotenv
-from google import genai
 from server.schemas import DocumentMetadata
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_CHAT_MODEL = os.getenv("GEMINI_CHAT_MODEL", "gemini-2.5-flash")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_CHAT_MODEL", "qwen2.5:3b")
 
-_client = None
-
-def _get_client():
-    global _client
-    if _client is None:
-        if not GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is not set in .env")
-        _client = genai.Client(api_key=GEMINI_API_KEY)
-    return _client
 
 def extract_metadata(content: str) -> DocumentMetadata:
     """
-    Extract structured metadata from the document content using Gemini API.
+    Extract structured metadata from document content using a local Ollama model.
     Truncates content to the first 8000 characters to save tokens.
     """
     if not content or not content.strip():
-        # Fallback empty metadata if there's no text
         return DocumentMetadata(
             title="Unknown Title",
             summary="No content provided.",
@@ -34,39 +24,36 @@ def extract_metadata(content: str) -> DocumentMetadata:
             language="en",
             project=None,
         )
-        
-    client = _get_client()
-    
-    # Take first 8000 chars to avoid exceeding context or costing too much
-    truncated_content = content[:8000]
 
-    system_instruction = (
-        "You are an expert document analyzer. Extract the title, a brief summary, "
-        "a list of key topics, the document type (e.g., 'article', 'report', 'notes', 'technical documentation'), "
-        "the 2-letter ISO language code, and the project name for the following text. "
-        "Do not invent information. If you cannot determine the title, use the first sentence. "
-        "For project: return the name of the project, product, client, or initiative this document "
-        "belongs to (e.g. 'RAG Masterclass', 'Project Apollo', 'Client Acme'). "
-        "Return null if the document does not clearly belong to an identifiable project."
+    truncated_content = content[:8000]
+    schema = DocumentMetadata.model_json_schema()
+
+    prompt = (
+        "You are an expert document analyzer. Extract structured metadata from the document below.\n"
+        "Return a JSON object matching this schema:\n"
+        f"{json.dumps(schema, indent=2)}\n\n"
+        "Rules:\n"
+        "- title: document title, or first sentence if unclear\n"
+        "- summary: brief 1-2 sentence summary\n"
+        "- topics: list of key topics\n"
+        "- document_type: one of 'article', 'report', 'notes', 'technical documentation'\n"
+        "- language: 2-letter ISO code (e.g. 'en')\n"
+        "- project: project or product name this document belongs to, or null if unclear\n\n"
+        f"Document:\n{truncated_content}"
     )
-    
-    response = client.models.generate_content(
-        model=GEMINI_CHAT_MODEL,
-        contents=f"{system_instruction}\n\nDocument Text:\n{truncated_content}",
-        config=dict(
-            response_mime_type="application/json",
-            response_schema=DocumentMetadata,
-            temperature=0.0
-        )
+
+    client = ollama.Client(host=OLLAMA_BASE_URL)
+    response = client.chat(
+        model=OLLAMA_CHAT_MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        format="json",
+        options={"temperature": 0.0},
     )
-    
-    # Parse the json string from the response into our Pydantic schema
+
     try:
-        # Pydantic v2 validation from JSON string
-        raw_json = response.text
+        raw_json = response.message.content
         return DocumentMetadata.model_validate_json(raw_json)
     except Exception as e:
-        # Fallback to defaults on parse failure
         return DocumentMetadata(
             title="Parsing Error",
             summary=f"Failed to parse metadata: {str(e)}",
