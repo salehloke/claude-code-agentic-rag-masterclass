@@ -18,7 +18,7 @@ C4Context
 
     System(rag, "RAG MCP Server", "Provides document ingestion, vector retrieval, and direct SQL analytics capabilities to the Agent.")
 
-    System_Ext(ollama, "Ollama (Local)", "Local inference runtime providing dense text embeddings (nomic-embed-text) and metadata extraction (qwen2.5:3b).")
+    System_Ext(ollama, "Ollama (Local)", "Local inference runtime providing dense text embeddings (jina/jina-embeddings-v2-base-en) and metadata extraction (qwen2.5:3b).")
 
     Rel(user, agent, "Chats with and delegates tasks to", "Text")
     Rel(agent, rag, "Executes tools (ingest, search, sql)", "MCP Protocol (JSON-RPC over stdio)")
@@ -34,7 +34,7 @@ C4Container
     title Container diagram for RAG MCP System
 
     System_Ext(agent, "AI Agent (Claude Code)", "Client executing MCP tool calls.")
-    System_Ext(ollama, "Ollama (Local)", "Local inference runtime. nomic-embed-text for embeddings, qwen2.5:3b for metadata extraction.")
+    System_Ext(ollama, "Ollama (Local)", "Local inference runtime. jina/jina-embeddings-v2-base-en for embeddings, qwen2.5:3b for metadata extraction.")
 
     System_Boundary(rag_system, "RAG MCP Server Stack") {
         Container(mcp_server, "FastMCP Python Server", "Python", "Exposes endpoints, routes inputs, orchestrates NLP models and connections.")

@@ -1,0 +1,21 @@
+- generic [ref=e17]:
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]: Ollama RAG
+      - generic [ref=e21]:
+        - button "Knowledge Base" [ref=e22] [cursor=pointer]:
+          - img
+        - button "New Chat" [ref=e23] [cursor=pointer]:
+          - img
+    - generic [ref=e25]:
+      - generic "homelablowkey@gmail.com" [ref=e26]
+      - button [ref=e27] [cursor=pointer]:
+        - img
+  - generic [ref=e28]:
+    - generic [ref=e31]: Start a conversation...
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - textbox "Message Ollama RAG..." [disabled]
+        - button [disabled]:
+          - img
+      - generic [ref=e34]: Local Ollama embeddings + Qwen2.5:3b Generation

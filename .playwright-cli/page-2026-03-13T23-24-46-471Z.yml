@@ -1,0 +1,59 @@
+- generic [ref=e17]:
+  - generic [ref=e18]:
+    - generic [ref=e19]:
+      - generic [ref=e20]: Ollama RAG
+      - generic [ref=e21]:
+        - button "Knowledge Base" [ref=e22] [cursor=pointer]:
+          - img
+        - button "New Chat" [ref=e23] [cursor=pointer]:
+          - img
+    - button "New Conversation" [ref=e25] [cursor=pointer]:
+      - img [ref=e26]
+      - generic [ref=e28]: New Conversation
+    - generic [ref=e29]:
+      - generic "homelablowkey@gmail.com" [ref=e30]
+      - button [ref=e31] [cursor=pointer]:
+        - img
+  - generic [ref=e32]:
+    - generic [ref=e34]:
+      - generic [ref=e37]: what are the available documents
+      - generic [ref=e38]:
+        - img [ref=e40]
+        - generic [ref=e44]: I don't know based on the context provided.
+      - generic [ref=e47]: 1+1?
+      - generic [ref=e48]:
+        - img [ref=e50]
+        - generic [ref=e54]: 1+1 equals 2.
+      - generic [ref=e57]: readme cdh
+      - generic [ref=e58]:
+        - img [ref=e60]
+        - generic [ref=e64]: The context provided does not contain a specific README file for the Customer Data Hub (CDH). The information given focuses on various documentation and guides related to the CDH integration, lifecycle, migration, operations, and API details. For a README file, you would typically find an introduction or overview of the project, installation instructions, or links to further documentation and resources. Without having the actual README file, I cannot provide more specific information about its content.
+      - generic [ref=e67]: rag masterclass
+      - generic [ref=e68]:
+        - img [ref=e70]
+        - generic [ref=e74]: The context provided does not contain any information about "rag masterclass." It appears to be discussing setup tasks for a project that includes a Masterclass environment, likely for Claude Code. If you have more context or need information about a specific task related to "rag masterclass," please provide that information, and I'll do my best to assist you.
+      - generic [ref=e77]: rag architecture
+      - generic [ref=e78]:
+        - img [ref=e80]
+        - generic [ref=e84]: The context provided discusses restructuring documentation for an architecture that is centered around the Model Context Protocol (MCP). It includes architectural C4 Model diagrams that map the relationships of the system, with the Agentic RAG system built around the MCP as an external tool server for autonomous AI agents like Claude Code. However, there is no specific information provided about the architecture of the RAG (Reactive Generative AI) itself. If you need details about the architecture of the RAG system, you would need to look into additional resources or documentation related to the project mentioned in the context. The context primarily focuses on restructuring existing documentation and reorganizing the project's structure to reflect an MCP-first architecture.
+      - generic [ref=e87]: share me the c4 diagram
+      - generic [ref=e88]:
+        - img [ref=e90]
+        - generic [ref=e94]: I don't have the specific C4 diagram for the RAG architecture you're referring to based on the context provided. The context discusses restructuring documentation and reorganizing the project structure around the Model Context Protocol (MCP) with Agentic RAG as an external tool server for autonomous AI agents like Claude Code. To share a specific C4 diagram, I would need to refer to an actual diagram within the documentation or project files. Without having the diagram itself, I can't provide it. If you have access to the documentation or files containing the C4 diagram, you should be able to share it directly.
+      - generic [ref=e97]: test
+      - generic [ref=e98]:
+        - img [ref=e100]
+        - generic [ref=e104]: I don't have any specific test information to share from the context provided. The context covers restructuring documentation and reorganizing the project structure for a project centered around the Model Context Protocol (MCP) and Agentic RAG. If you need information about tests or specific test files, you would need to look into the project's test documentation or files. Do you have a particular aspect of testing or a specific test file in mind?
+      - generic [ref=e107]: hello, what can you do?
+      - generic [ref=e108]:
+        - img [ref=e110]
+        - generic [ref=e114]: I can help answer questions, provide information based on the context provided, and assist with tasks within the scope of that context. For example, if you need help understanding or restructuring documentation related to the Model Context Protocol (MCP) and Agentic RAG, I can assist with that. However, I don't have access to any specific project files or documents outside of the context you've provided. What specific type of assistance are you looking for?
+      - generic [ref=e122]: what is RAG?
+      - img [ref=e125]
+      - generic [ref=e130]: Thinking...
+    - generic [ref=e115]:
+      - generic [ref=e116]:
+        - textbox "Message Ollama RAG..." [disabled]
+        - button [disabled]:
+          - img
+      - generic [ref=e118]: Local Ollama embeddings + Qwen2.5:3b Generation

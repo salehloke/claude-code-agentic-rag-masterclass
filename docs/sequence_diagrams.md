@@ -30,7 +30,7 @@ sequenceDiagram
         MCP->>MCP: recursive_split(markdown)
 
         par Parallel Operations
-            MCP->>Ollama: embed_texts(chunks) [nomic-embed-text]
+            MCP->>Ollama: embed_texts(chunks) [jina/jina-embeddings-v2-base-en]
             Ollama-->>MCP: Returns 768-dim Vectors
         and
             MCP->>Ollama: extract_metadata(top 8000 chars) [qwen2.5:3b]
@@ -64,7 +64,7 @@ sequenceDiagram
 
     par Parallel Search Execution
         %% Vector Search Path
-        MCP->>Ollama: embed_text("foo") [nomic-embed-text]
+        MCP->>Ollama: embed_text("foo") [jina/jina-embeddings-v2-base-en]
         Ollama-->>MCP: Returns 768-dim Vector
         MCP->>DB: rpc("search_chunks", {vector, filters})
         note over DB: Executes Cosine Similarity (pgvector)

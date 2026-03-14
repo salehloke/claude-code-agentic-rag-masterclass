@@ -1,0 +1,10 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - generic [ref=e6]: RAG Masterclass
+    - generic [ref=e7]: Enter your email to sign in or create an account.
+  - generic [ref=e9]:
+    - textbox "m@example.com" [ref=e11]
+    - textbox "Password" [ref=e13]
+    - generic [ref=e14]:
+      - button "Sign In" [ref=e15] [cursor=pointer]
+      - button "Create Account" [ref=e16] [cursor=pointer]

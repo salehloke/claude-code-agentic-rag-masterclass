@@ -1,0 +1,23 @@
+[    6459ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6472ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6485ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6498ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6511ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6523ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[    6536ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[  152162ms] [ERROR] TypeError: Failed to fetch
+    at createNewThread (http://localhost:5173/src/pages/Chat.tsx:69:25)
+    at onClick (http://localhost:5173/src/pages/Chat.tsx:160:91)
+    at onClick (http://localhost:5173/node_modules/.vite/deps/@base-ui_react_button.js?v=52d5e807:147:26)
+    at executeDispatch (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:13622:11)
+    at runWithFiberInDEV (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:997:72)
+    at processDispatchQueue (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:13658:37)
+    at http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:14071:11
+    at batchedUpdates$1 (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:2626:42)
+    at dispatchEventForPluginEventSystem (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:13763:9)
+    at dispatchEvent (http://localhost:5173/node_modules/.vite/deps/react-dom_client.js?v=52d5e807:16784:13) @ http://localhost:5173/src/pages/Chat.tsx:78
+[  153144ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[  153167ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[  153201ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[  153215ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
+[  153231ms] [ERROR] Failed to load resource: the server responded with a status of 401 (Unauthorized) @ http://127.0.0.1:8000/threads:0
