@@ -320,3 +320,55 @@ Started: 2026-03-15 08:18 GMT+8
 - Project filter in list_documents: lookup project by name first, then filter by project_id
 
 ---
+
+## 2026-03-15 14:20 - US-017: Create index_docs script for batch ingestion
+- Created scripts/index_docs.py for batch document ingestion:
+  - Recursively scans docs/, knowledge-base/, and custom directories
+  - Finds all .pdf, .docx, .md, .txt files
+  - Calls ingest_file MCP tool for each supported file
+  - Supports --project, --force, --create-project, --dirs arguments
+  - Prints progress and summary with emoji indicators
+  - Exit code 1 on any failures
+- Created server/test_index_docs.py with 23 passing tests:
+  - test_find_files_returns_list_of_paths
+  - test_find_files_filters_by_extension
+  - test_find_files_recursive_search
+  - test_find_files_skips_missing_directory
+  - test_find_files_with_multiple_directories
+  - test_index_documents_ingests_all_files
+  - test_index_documents_handles_skipped_files
+  - test_index_documents_handles_failed_files
+  - test_index_documents_passes_project_parameter
+  - test_index_documents_passes_force_parameter
+  - test_index_documents_handles_exception
+  - test_print_summary_shows_counts
+  - test_print_summary_shows_failed_files
+  - test_main_with_no_files
+  - test_main_passes_project_arg
+  - test_main_passes_force_arg
+  - test_main_exits_with_error_on_failure
+  - test_supported_extensions_includes_pdf
+  - test_supported_extensions_includes_docx
+  - test_supported_extensions_includes_md
+  - test_supported_extensions_includes_txt
+  - test_default_directories_includes_docs
+  - test_default_directories_includes_knowledge_base
+- Typecheck passes (python -m py_compile scripts/index_docs.py)
+- All 23 tests pass
+- Committed: feat: US-017 - Create index_docs script for batch ingestion
+
+**Learnings:**
+- Script uses sys.path manipulation to import from server/ directory
+- ingest_file already handles deduplication via content_hash - script respects this
+- Batch ingestion should handle exceptions gracefully to continue processing remaining files
+- Summary output helps identify which files failed for debugging
+- Exit code 1 on failures enables CI/CD pipeline integration
+
+**Codebase Patterns:**
+- scripts/ directory for reusable Python utilities outside server/
+- Batch scripts should call existing MCP tools (ingest_file) rather than duplicating logic
+- Test imports require REPO_ROOT in sys.path for cross-directory module access
+- argparse with RawDescriptionHelpFormatter enables clean CLI documentation
+
+---
+
