@@ -1,6 +1,10 @@
--- US-014: Create pgvector search_chunks RPC function for vector similarity search
--- Uses cosine distance operator (<=>) with proper search_path for PostgREST compatibility
--- Accepts optional filter parameters for document_type, topics, and project_id
+-- US-016: Add metadata-filtered retrieval to search
+-- Updates search_chunks RPC function to support document_type and topics filtering
+-- These filters are already present but this migration ensures they're deployed
+
+-- Drop existing function and recreate with full metadata filter support
+drop function if exists search_chunks(vector(768), int, float, text, text[], uuid);
+
 create or replace function search_chunks(
   query_embedding    vector(768),
   match_count        int     default 5,
