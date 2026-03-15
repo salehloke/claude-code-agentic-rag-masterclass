@@ -369,6 +369,88 @@ Started: 2026-03-15 08:18 GMT+8
 - Batch scripts should call existing MCP tools (ingest_file) rather than duplicating logic
 - Test imports require REPO_ROOT in sys.path for cross-directory module access
 - argparse with RawDescriptionHelpFormatter enables clean CLI documentation
+- Environment variables loaded via python-dotenv from .env in project root
+- Supabase client instantiated with create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+- Gemini API key format: starts with "AIza", length > 30 chars
+- Supabase service role key format: JWT starting with "eyJ", length > 50 chars
+
+---
+
+## 2026-03-15 15:00 - US-018: Configure arr-stack environment variables
+- Verified .env contains arr-stack specific Supabase URL (http://192.168.0.105:8000)
+- Confirmed SUPABASE_SERVICE_ROLE_KEY configured correctly (valid JWT format)
+- Confirmed GEMINI_API_KEY present and valid (starts with AIza)
+- Created test_env_config.py with 6 passing tests:
+  - test_supabase_url_is_arr_stack
+  - test_supabase_service_role_key_present
+  - test_gemini_api_key_present
+  - test_supabase_client_can_connect
+  - test_env_file_exists
+  - test_env_file_has_required_vars
+- Typecheck passes (py_compile)
+- Committed: feat: US-018 - Configure arr-stack environment variables
+
+**Learnings:**
+- .env file in project root loaded via python-dotenv with Path(__file__).parent.parent / ".env"
+- arr-stack uses local network IP (192.168.0.105:8000), not localhost - consistent with prior patterns
+- Environment variable validation tests should check both presence and format
+- Supabase client instantiation succeeds when valid URL and service role key provided
+- Gemini API keys start with "AIza" prefix - useful for validation
+- Service role keys are JWTs starting with "eyJ" - can validate format without decoding
+
+---
+
+## 2026-03-15 15:40 - US-019: Run end-to-end ingestion and search smoke test
+- Created server/test_e2e_smoke.py with 5 comprehensive E2E tests:
+  - test_ingest_file_returns_success_status: Verifies ingest_file completes and returns required fields
+  - test_search_documents_returns_relevant_chunks: Verifies search finds ingested content
+  - test_similarity_scores_above_threshold: Verifies similarity scores meet threshold
+  - test_e2e_complete_pipeline: Full pipeline test ingest → search → verify
+  - test_typecheck_passes: Verifies test file typechecks
+- All 5 tests pass with pytest
+- Typecheck passes (py_compile)
+- Committed: feat: US-019 - Run end-to-end ingestion and search smoke test
+
+**Learnings:**
+- E2E tests must use unique filenames (UUID-based) to avoid duplicate detection conflicts
+- sample.md is too short to produce chunks - use sample.txt for chunking tests
+- ingest_file returns status='error' with "No chunks produced" for files that don't chunk
+- Tests should clean up created documents via delete_document to avoid database pollution
+- search_documents returns results with similarity, rrf_score, or score fields depending on mode
+- Low threshold (0.0) ensures results are returned even for weak matches in testing
+
+---
+
+## 2026-03-15 15:44 - US-020: Document RAG indexing setup in docs folder
+- Created docs/01_active/rag-indexing.md with comprehensive RAG indexing documentation:
+  - Architecture overview (Supabase pgvector, Gemini embeddings, MCP server, chunking)
+  - Prerequisites and environment setup for arr-stack
+  - Database schema description (projects, documents, chunks, storage bucket)
+  - All 10 MCP tools documented with usage examples
+  - Batch ingestion via index_docs script
+  - Testing instructions
+  - Troubleshooting section
+- Created server/test_rag_indexing_docs.py with 10 passing tests:
+  - test_documentation_file_exists
+  - test_documentation_file_not_empty
+  - test_documentation_includes_arr_stack_setup
+  - test_documentation_lists_mcp_tools
+  - test_documentation_includes_tool_usage
+  - test_documentation_includes_architecture_overview
+  - test_documentation_includes_database_schema
+  - test_documentation_includes_testing_instructions
+  - test_documentation_has_troubleshooting_section
+  - test_documentation_typecheck_passes
+- All 10 tests pass with pytest
+- Typecheck passes (py_compile)
+- Committed: feat: US-020 - Document RAG indexing setup in docs folder
+
+**Learnings:**
+- Documentation should be in docs/01_active/ for active/working documentation
+- MCP tools should be documented with both description and usage examples
+- arr-stack specific configuration (local IP 192.168.0.105) should be clearly documented
+- Troubleshooting section helps future developers debug common issues
+- Tests verify documentation completeness by checking for required sections and content
 
 ---
 
