@@ -180,3 +180,30 @@ Started: 2026-03-15 08:18 GMT+8
 - Retry logic handles transient API failures gracefully
 
 ---
+
+## 2026-03-15 08:57 - US-008: Create document parser for multi-format support
+- Created test_parser.py with 10 passing tests:
+  - test_parse_txt_file
+  - test_parse_md_file
+  - test_parse_html_file
+  - test_parse_pdf_file
+  - test_parse_docx_file
+  - test_unsupported_format_raises_error
+  - test_nonexistent_file_raises_error
+  - test_case_insensitive_extension
+  - test_returns_string_type
+  - test_empty_txt_file
+- Parser already existed using Docling for PDF/DOCX/HTML/MD and plain read for TXT
+- All 10 tests pass
+- Typecheck passes (parser imports successfully)
+- Committed: feat: US-008 - Create document parser for multi-format support
+
+**Learnings:**
+- Docling handles PDF, DOCX, HTML, and Markdown with unified export_to_markdown() output
+- Plain text (.txt) bypasses heavyweight parsing for efficiency
+- Test data files are parsed by Docling which normalizes content structure
+- Unsupported formats raise clear ValueError with extension in message
+- Case-insensitive extension handling works via path.suffix.lower()
+
+---
+
