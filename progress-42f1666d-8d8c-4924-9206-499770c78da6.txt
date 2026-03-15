@@ -1,0 +1,150 @@
+# Progress Log
+Run: 42f1666d-8d8c-4924-9206-499770c78da6
+Task: Set up RAG indexing for claude-code-agentic-rag-masterclass project on arr-stack. Index docs, knowledge-base, and project files. Create MCP tools for semantic search. Use Supabase pgvector for storage. --no-deliver
+Started: 2026-03-15 08:18 GMT+8
+
+## Codebase Patterns
+- Supabase local stack runs at http://192.168.0.105:8000 (local IP, not localhost)
+- pgvector extension enabled via migration: `20260306155855_enable_pgvector.sql`
+- MCP server uses `mcp.server.fastmcp.FastMCP` pattern
+- Tests use pytest, run via `python -m pytest` from server/venv
+- Environment variables loaded via `python-dotenv`
+- Supabase client instantiated with `create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)`
+- Chunks table embedding column is vector(768) - requires exact 768 dimensions on insert
+- Supabase returns embeddings as string representation "[0.1,0.1,...]" - parse by counting commas
+- Supabase storage bucket API uses `client.storage.list_buckets()` and `client.storage.get_bucket(id)` - not `.from_().select()` pattern
+- Storage RLS policies use `storage.foldername(name)` to extract user folder from object path
+
+---
+
+## 2026-03-15 08:20 - US-001: Verify Supabase pgvector extension and arr-stack connectivity
+- Verified pgvector extension enabled in supabase/migrations/20260306155855_enable_pgvector.sql
+- Confirmed SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY present in .env
+- Tested supabase_health tool returns status=connected
+- Created test_supabase_health.py with 4 passing tests
+- Improved .gitignore to exclude sensitive files and common artifacts
+- Committed: feat: US-001 - Verify Supabase pgvector extension and arr-stack connectivity
+
+**Learnings:**
+- Supabase local stack uses local network IP (192.168.0.105), not localhost - this is important for containerized environments
+- The supabase_health tool uses `client.auth.admin.list_users()` to verify connectivity
+- pytest not installed by default in server/venv - need to install for testing
+
+---
+
+## 2026-03-15 08:25 - US-002: Create documents table with content_hash and project_id columns
+- Created migration 20260315082543_create_documents_table_us002.sql with:
+  - Composite unique index on filename+content_hash for deduplication
+  - Updated RLS policy for project-based access control
+  - Grant select on documents to sql_reader role
+- Created test_documents_schema.py with 6 passing tests
+- Committed: feat: US-002 - Create documents table with content_hash and project_id columns
+
+**Learnings:**
+- Documents table already existed from prior migration (20260306164905_create_documents_table.sql)
+- project_id FK was added separately (20260306164905_create_documents_table.sql)
+- The unique index on filename+content_hash was missing - US-002 adds this for deduplication
+- RLS policy needs to consider project-based access, not just user_id
+- Tests verify schema by querying the actual table through Supabase client
+
+---
+
+## 2026-03-15 08:32 - US-003: Create chunks table with pgvector embedding column
+- Created migration 20260315083000_create_chunks_table_us003.sql:
+  - Documents the chunks table schema (already existed from 20260306164925_create_chunks_table.sql)
+  - Ensures IVF index exists on embedding column (idempotent)
+  - Grants SELECT on chunks to sql_reader role for MCP tools
+- Created test_chunks_schema.py with 6 passing tests:
+  - test_chunks_table_exists
+  - test_chunks_table_has_required_columns
+  - test_chunks_embedding_column_is_vector_768
+  - test_chunks_document_id_foreign_key_cascade_delete
+  - test_chunks_embedding_index_exists
+  - test_chunks_chunk_index_tracks_ordering
+- Committed: feat: US-003 - Create chunks table with pgvector embedding column
+
+**Learnings:**
+- Chunks table already existed from prior migration with all required columns
+- pgvector vector(768) type enforces exact 768 dimensions - cannot insert smaller vectors
+- Supabase Python client returns embeddings as string representation, not list
+- IVF index (ivfflat) with vector_cosine_ops is used for cosine similarity search
+- chunk_index column is NOT NULL and tracks ordering within documents
+- document_id FK uses ON DELETE CASCADE for automatic cleanup
+
+---
+
+## 2026-03-15 08:35 - US-004: Create projects table for document categorization
+- Created migration 20260315083500_create_projects_table_us004.sql:
+  - Documents the projects table schema (already exists from 20260307190000_create_projects_table.sql)
+  - Ensures unique constraint on name column (idempotent)
+  - Grants SELECT on projects to sql_reader role for MCP tools
+  - Inserts seed project 'claude-code-agentic-rag-masterclass'
+- Created test_projects_schema.py with 6 passing tests:
+  - test_projects_table_exists
+  - test_projects_table_has_required_columns
+  - test_projects_name_is_unique
+  - test_projects_table_has_seed_project
+  - test_documents_project_id_foreign_key_to_projects
+  - test_projects_created_at_defaults_to_now
+- Committed: feat: US-004 - Create projects table for document categorization
+
+**Learnings:**
+- Projects table already existed from prior migration (20260307190000_create_projects_table.sql)
+- project_id FK on documents table was added separately (20260307190001_add_project_to_documents.sql)
+- Seed project must be inserted explicitly - migration ON CONFLICT clause ensures idempotency
+- Unique constraint on name is verified by attempting duplicate insert and catching exception
+- Tests verify schema by querying through Supabase client and checking migration files
+
+---
+
+## 2026-03-15 08:40 - US-005: Create Supabase Storage bucket for raw document files
+- Created migration 20260315084000_create_documents_bucket_us005.sql:
+  - Creates 'documents' storage bucket (idempotent with ON CONFLICT)
+  - Bucket set to private (public=false)
+  - RLS policies for authenticated users to upload/read/update/delete to their own folder
+  - Grants SELECT on storage.buckets and storage.objects to sql_reader role
+- Created test_storage_bucket.py with 6 passing tests:
+  - test_documents_bucket_exists
+  - test_documents_bucket_is_private
+  - test_storage_bucket_migration_exists
+  - test_storage_rls_policy_allows_authenticated_upload
+  - test_storage_objects_table_has_rls_enabled
+  - test_storage_bucket_creation_is_idempotent
+- Committed: feat: US-005 - Create Supabase Storage bucket for raw document files
+
+**Learnings:**
+- Supabase storage bucket API uses `client.storage.list_buckets()` and `client.storage.get_bucket(id)` - different from table query pattern
+- Storage bucket already existed from prior migration (20260306165516_create_documents_storage_bucket.sql)
+- RLS policies on storage.objects use `storage.foldername(name)` to extract the first folder segment from object path
+- Authenticated users can only upload to folders matching their user_id
+- sql_reader role needs explicit grants on storage.buckets and storage.objects for MCP tools
+
+---
+
+## 2026-03-15 08:41 - US-006: Implement recursive character chunking strategy
+- Updated chunking.py with recursive_split function using token-based sizing:
+  - Separators: ['\n\n', '\n', ' ', '']
+  - Target chunk size: 512 tokens
+  - Overlap: 50 tokens
+  - Uses tiktoken for accurate token counting (cl100k_base encoding)
+  - Handles empty input gracefully (returns empty list)
+  - _get_last_n_tokens helper for overlap extraction
+- Created test_chunking.py with 24 passing tests covering:
+  - Function existence and signature
+  - Empty input handling
+  - Token-based chunk size limits
+  - Default separators
+  - Overlap behavior
+  - Token counting utility
+  - Integration with special characters and unicode
+- Typecheck passes (mypy --ignore-missing-imports)
+- Committed: feat: US-006 - Implement recursive character chunking strategy
+
+**Learnings:**
+- tiktoken not included in requirements.txt - needed to install for token counting
+- mypy requires explicit Optional for nullable list parameters (list[str] | None)
+- Token-based chunking is more accurate than character-based for LLM embeddings
+- Overlap adds context from previous chunk but may slightly exceed chunk_size (expected behavior)
+- Tests should verify base splitting without overlap first, then test overlap separately
+
+---
