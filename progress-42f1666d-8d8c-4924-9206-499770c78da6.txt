@@ -207,3 +207,116 @@ Started: 2026-03-15 08:18 GMT+8
 
 ---
 
+
+## 2026-03-15 09:05 - US-009: Implement SHA-256 content hashing for deduplication
+- Implemented SHA-256 content hashing in ingest_file using hashlib.sha256(content.encode()).hexdigest()
+- Hash stored in documents.content_hash column
+- Duplicate detection queries by filename to find existing documents, then compares hash
+- Created test_ingest_hash.py with 10 passing tests:
+  - test_sha256_hash_computation
+  - test_hash_deterministic
+  - test_hash_changes_with_content_modification
+  - test_hash_stored_in_documents_table
+  - test_duplicate_detection_by_filename_and_hash
+  - test_same_filename_different_hash_detected
+  - test_unique_index_on_filename_hash
+  - test_ingest_file_computes_hash
+  - test_ingest_file_skips_duplicate
+  - test_ingest_file_force_reingest
+- Typecheck passes (mypy)
+- Committed: feat: US-009 - Implement SHA-256 content hashing for deduplication
+
+**Learnings:**
+- hashlib.sha256(content.encode()).hexdigest() produces 64-character hex string (256 bits)
+- Duplicate detection in ingest_file queries by filename first, then compares content_hash
+- force=True flag bypasses hash check and triggers re-ingestion
+- Tests use UUID-based unique filenames to avoid conflicts with existing test data
+---
+
+## 2026-03-15 10:10 - US-010: Create ingest_file MCP tool
+- Implemented ingest_file MCP tool with @mcp.tool() decorator in main.py
+- Tool parameters: file_path, force, project, create_project
+- Ingestion flow: parse → hash → duplicate check → upload → chunk → embed → store
+- Returns: status, document_id, chunk_count, filename, content_hash, metadata_extracted, project_id
+- Duplicate detection: returns status='skipped' with existing_document_id and reason='duplicate'
+- Force flag: bypasses duplicate skip, deletes old document, re-ingests
+- Empty file handling: returns status='error' with "No chunks produced" message
+- Created test_ingest_file.py with 13 comprehensive tests covering:
+  - Required return fields (status, document_id, chunk_count)
+  - Duplicate detection and skip behavior
+  - Force flag re-ingestion
+  - Nonexistent file error handling
+  - Chunks table record creation
+  - Content hash storage verification
+  - Document status update
+  - Filename return
+  - Markdown file handling
+  - PDF file handling (skipped if test file missing)
+  - Empty file edge case
+  - Special characters (unicode) handling
+  - Very long content handling
+- Tests use _get_long_content() fixture with >512 tokens to ensure proper chunking
+- Typecheck passes (py_compile)
+- Committed: feat: US-010 - Create ingest_file MCP tool
+
+**Learnings:**
+- ingest_file tool already existed in main.py from prior work - US-010 validates it's complete
+- The tool uses @mcp.tool() decorator from fastmcp for MCP protocol
+- Content must exceed 512 tokens to trigger chunking - tests need long fixtures
+- SHA-256 hashing enables efficient duplicate detection via content_hash column
+- Force flag triggers old document deletion before re-ingestion (cascade deletes chunks)
+- Supabase storage upload requires MIME type mapping for proper content-type headers
+- Chunking uses recursive_split for general files, markdown_split for .md/.txt files
+- Gemini API embedding returns 768-dimensional vectors matching pgvector column type
+- Tests must clean up created documents to avoid database pollution
+- Empty files produce no chunks and return error status gracefully
+
+**Codebase Patterns:**
+- ingest_file flow: parse_document → sha256 hash → duplicate check → storage upload → chunking → embedding → chunks insert
+- Duplicate check queries documents table by filename, compares content_hash
+- Same filename + same hash = skip; same filename + different hash = delete old + reingest
+- Force=True bypasses skip logic regardless of hash match
+- Project assignment is optional - documents can exist without project_id
+- Metadata extraction uses LLM to infer title, summary, topics, document_type, language
+- Status values: processing (initial), completed (success), failed (error), project_confirmation_needed
+- Return dict includes **response_extra for project_confirmation_needed case
+
+---
+
+## 2026-03-15 10:26 - US-011: Create list_documents MCP tool
+- Implemented list_documents MCP tool with @mcp.tool() decorator in main.py (already existed, validated completeness)
+- Tool parameters: project (optional filter by project name)
+- Query documents table with join to projects: `.select("id, filename, status, chunk_count, content_hash, created_at, project_id, projects(id, name)")`
+- Returns list of dicts with required fields: id, filename, status, chunk_count, projects (joined data)
+- Optional project filter: looks up project by name, filters by project_id if found, returns empty list if not found
+- Results ordered by created_at descending (newest first)
+- Created test_list_documents.py with 10 passing tests:
+  - test_list_documents_returns_list_of_dicts
+  - test_list_documents_returns_required_fields
+  - test_list_documents_project_filter
+  - test_list_documents_nonexistent_project_returns_empty
+  - test_list_documents_ordered_by_created_at_desc
+  - test_list_documents_includes_content_hash
+  - test_list_documents_includes_created_at
+  - test_list_documents_no_documents_returns_empty
+  - test_list_documents_with_special_characters_in_filename
+  - test_list_documents_multiple_documents_same_project
+- Tests verify Supabase join returns project data as dict (not list)
+- Typecheck passes (py_compile)
+- Committed: feat: US-011 - Create list_documents MCP tool
+
+**Learnings:**
+- list_documents tool already existed in main.py - US-011 validates completeness and adds tests
+- Supabase select with join syntax: `.select("..., projects(id, name)")` joins related table
+- Joined data returns as dict (not list) - access via `doc["projects"]["name"]` not `doc["projects"][0]["name"]`
+- Project filter pattern: lookup project by name first, then filter query by project_id
+- Empty list returned for nonexistent project (graceful degradation)
+- Ordering by created_at desc ensures newest documents appear first
+- Tests clean up created documents to avoid database pollution
+- Content hash and created_at fields included in response for full metadata visibility
+
+**Codebase Patterns:**
+- list_documents uses Supabase select with join: `.select("..., projects(id, name)")` - joined data returns as dict, not list
+- Project filter in list_documents: lookup project by name first, then filter by project_id
+
+---
