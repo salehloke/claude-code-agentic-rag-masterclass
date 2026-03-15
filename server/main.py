@@ -272,14 +272,15 @@ def delete_document(document_id: str) -> dict:
     client = _get_supabase()
 
     # Get document info first
-    doc = client.table("documents").select("id, filename").eq(
+    doc_result = client.table("documents").select("id, filename").eq(
         "id", document_id
-    ).single().execute()
+    ).execute()
 
-    if not doc.data:
+    if not doc_result.data:
         return {"status": "error", "message": f"Document not found: {document_id}"}
 
-    filename = doc.data["filename"]
+    doc = doc_result.data[0]
+    filename = doc["filename"]
 
     # Delete from storage
     storage_path = f"documents/{document_id}/{filename}"
