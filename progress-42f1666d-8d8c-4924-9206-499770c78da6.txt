@@ -148,3 +148,35 @@ Started: 2026-03-15 08:18 GMT+8
 - Tests should verify base splitting without overlap first, then test overlap separately
 
 ---
+
+## 2026-03-15 08:55 - US-007: Implement Gemini API embedding function
+- Updated embeddings.py with Gemini API integration:
+  - embed_texts() function for batch embedding via Gemini API
+  - embed_text() function for single text embedding
+  - Uses gemini-embedding-001 model
+  - Output dimensionality set to 768 (matches pgvector vector(768))
+  - Retry logic with exponential backoff (3 attempts, 1s/2s/3s delays)
+  - GEMINI_API_KEY loaded from .env
+  - Type-safe with mypy annotations
+- Created test_embeddings.py with 10 passing tests:
+  - test_embed_text_returns_list
+  - test_embed_text_dimension_is_768
+  - test_embed_texts_batch_returns_correct_count
+  - test_embed_texts_all_have_768_dimensions
+  - test_embed_text_with_different_task_type
+  - test_gemini_model_name
+  - test_api_key_loaded_from_env
+  - test_embed_empty_string_raises
+  - test_embed_special_characters
+  - test_embed_long_text
+- Typecheck passes (mypy)
+- Committed: feat: US-007 - Implement Gemini API embedding function
+
+**Learnings:**
+- Google GenAI SDK uses `types.EmbedContentConfig` for embedding configuration (not `EmbeddingConfig`)
+- API requires `output_dimensionality` parameter to match pgvector dimensions (768)
+- Empty strings cause 400 INVALID_ARGUMENT from Gemini API - handled by test
+- Batch embedding is more efficient than individual calls for multiple chunks
+- Retry logic handles transient API failures gracefully
+
+---
